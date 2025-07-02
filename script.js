@@ -202,7 +202,7 @@ function createAppCard(appDetails, app) {
                 <div>Version: ${appDetails.versionName}</div>
                 <div>Downloads: ${appDetails.downloads.toLocaleString()}</div>
                 <div>Updated: ${formatDate(appDetails.appVerUpdatedAt)}</div>
-                <div>Added: ${formatDate(appDetails.createdAt)}</div>
+                <div>Added: ${formatDate(appDetails.firstPublishedAt)}</div>
             </div>
             
             <div class="mt-4 flex justify-between items-center">
