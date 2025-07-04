@@ -68,7 +68,8 @@
     object-fit: cover;
 }
 
-.description-toggle {
+.description-toggle,
+.comments-toggle {
     color: #3b82f6;
     cursor: pointer;
     text-decoration: underline;
@@ -207,4 +208,4 @@
 
 #imageProgress:hover {
     background: rgba(0, 0, 0, 0.8);
-} 
+}

@@ -181,6 +181,7 @@ function createAppCard(appDetails, app) {
                         ${createRatingStars(app.averageUserRating)}
                         ${roundToDecimal(app.averageUserRating)}
                         <span class="text-sm text-gray-600">(${app.totalRatings.toLocaleString()})</span>
+                        <button class="comments-toggle" onclick="showComments('${appDetails.packageName}', '${app.totalRatings.toLocaleString()}')">Show comments</button>
                     </div>
                 </div>
             </div>
@@ -276,6 +277,42 @@ function showDescription(appName, description) {
     // Show the modal
     modal.classList.remove('hidden');
     modal.classList.add('show');
+}
+
+async function showComments(packageName, votes) {
+    ModalManager.show('commentsModal', 'appCommentsBody', '<div class="text-center p-4"><p class="text-gray-600">Loading comments...</p></div>');
+    document.getElementById('appCommentsHeader').innerHTML = `App Comments (${votes})`;
+
+    try {
+        const response = await fetch(`https://backapi.rustore.ru/comment/comment?packageName=${packageName}&sortBy=NEW_FIRST&pageNumber=1&pageSize=20`);
+        const data = await response.json();
+        
+        if (data.code === 'OK') {
+            const comments = data.body.content;
+            document.getElementById('appCommentsBody').innerHTML = comments.length ? 
+                comments.map(c => {
+                    const devAnswer = c.devResponse ? `
+                        <div class="mt-4">Ответ разработчика</div>
+                        <div class="text-sm text-gray-600">${formatDate(c.devResponseDate)}</div>
+                        <div class="mt-2">${c.devResponse}</div>
+                    `: "";
+
+                    return `<div class="border-b pb-4">
+                                <div>${c.firstName}</div>
+                                <div class="rating">
+                                    ${createRatingStars(c.appRating)}
+                                </div>
+                                <div class="text-sm text-gray-600">${formatDate(c.commentDate)}</div>
+                                <div class="mt-2">${c.commentText}</div>
+                                ${devAnswer}
+                            </div>`;
+                }).join('') : 
+                '<div class="text-center p-4"><p class="text-gray-600">No comments available</p></div>';
+        }
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        ModalManager.showError('appCommentsBody', 'Unable to load comments', 'Please try again later');
+    }
 }
 
 // Image Preview functions
