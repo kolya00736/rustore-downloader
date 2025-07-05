@@ -282,11 +282,17 @@ function showDescription(appName, description) {
 async function showComments(packageName, pageNumber, votes, firstOpen) {
     if (firstOpen) {
         document.getElementById('appCommentsHeader').innerHTML = `App Comments (${votes.toLocaleString()})`;
-        ModalManager.show('commentsModal', 'appCommentsBody', '<div class="text-center p-4"><p class="text-gray-600">Loading comments...</p></div>');
+        document.getElementById('commentsFilterOption').innerHTML = '<option value="NEW_FIRST" selected>New first</option><option value="USEFUL_FIRST">Useful first</option>';
+        ModalManager.show('commentsModal');
+    }
+
+    if (pageNumber == 0) {
+        document.getElementById('appCommentsBody').innerHTML = '<div class="text-center p-4"><p class="text-gray-600">Loading comments...</p></div>';
     }
 
     try {
-        const response = await fetch(`https://backapi.rustore.ru/comment/comment?packageName=${packageName}&sortBy=NEW_FIRST&pageNumber=${pageNumber}&pageSize=20`);
+        const filterOption = document.getElementById('commentsFilterOption').value;
+        const response = await fetch(`https://backapi.rustore.ru/comment/comment?packageName=${packageName}&sortBy=${filterOption}&pageNumber=${pageNumber}&pageSize=20`);
         const data = await response.json();
         
         if (data.code === 'OK') {
@@ -299,7 +305,7 @@ async function showComments(packageName, pageNumber, votes, firstOpen) {
                         <div class="mt-2">${c.devResponse}</div>
                     `: "";
 
-                    return `<div class="border-b pb-4">
+                    return `<div class="p-4 bg-gray-100 rounded-xl">
                                 <div>${c.firstName}</div>
                                 <div class="rating">
                                     ${createRatingStars(c.appRating)}
@@ -344,6 +350,13 @@ document.getElementById('commentsModal').children[0].addEventListener("scroll", 
         showComments(packageName, pageNumber + 1);
     }
 })
+
+document.getElementById('commentsFilterOption').onchange = function() {
+    document.getElementById('commentsModal').dataset.pageCount = 0;
+
+    const packageName = document.getElementById('commentsModal').dataset.packageName;
+    showComments(packageName, 0);
+}
 
 // Image Preview functions
 function openPreview(imageUrl, event) {
