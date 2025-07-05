@@ -182,6 +182,7 @@ function createAppCard(appDetails, app) {
                         ${roundToDecimal(app.averageUserRating)}
                         <span class="text-sm text-gray-600">(${app.totalRatings.toLocaleString()})</span>
                     </div>
+                    <button class="comments-toggle" onclick="showComments('${appDetails.packageName}', 0, '${app.totalRatings}', true)">Show comments</button>
                 </div>
             </div>
             
@@ -276,6 +277,85 @@ function showDescription(appName, description) {
     // Show the modal
     modal.classList.remove('hidden');
     modal.classList.add('show');
+}
+
+async function showComments(packageName, pageNumber, votes, firstOpen) {
+    if (firstOpen) {
+        document.getElementById('appCommentsHeader').innerHTML = `App Comments (${votes.toLocaleString()})`;
+        document.getElementById('commentsFilterOption').innerHTML = '<option value="NEW_FIRST" selected>New first</option><option value="USEFUL_FIRST">Useful first</option>';
+        ModalManager.show('commentsModal');
+    }
+
+    if (pageNumber == 0) {
+        document.getElementById('appCommentsBody').innerHTML = '<div class="text-center p-4"><p class="text-gray-600">Loading comments...</p></div>';
+    }
+
+    try {
+        const filterOption = document.getElementById('commentsFilterOption').value;
+        const response = await fetch(`https://backapi.rustore.ru/comment/comment?packageName=${packageName}&sortBy=${filterOption}&pageNumber=${pageNumber}&pageSize=20`);
+        const data = await response.json();
+        
+        if (data.code === 'OK') {
+            const comments = data.body.content;
+            const commentsView = comments.length || pageNumber > 0 ? 
+                comments.map(c => {
+                    const devAnswer = c.devResponse ? `
+                        <div class="mt-4">Ответ разработчика</div>
+                        <div class="text-sm text-gray-600">${formatDate(c.devResponseDate)}</div>
+                        <div class="mt-2">${c.devResponse}</div>
+                    `: "";
+
+                    return `<div class="p-4 bg-gray-100 rounded-xl">
+                                <div>${c.firstName}</div>
+                                <div class="rating">
+                                    ${createRatingStars(c.appRating)}
+                                </div>
+                                <div class="text-sm text-gray-600">${formatDate(c.commentDate)}</div>
+                                <div class="mt-2">${c.commentText}</div>
+                                <div class="mt-4"><span class="font-bold text-green-600">${c.likeCounter}</span> | <span class="font-bold text-red-600">${c.dislikeCounter}</span></div>
+                                ${devAnswer}
+                            </div>`;
+                }).join('') : 
+                '<div class="text-center p-4"><p class="text-gray-600">No comments available</p></div>';
+            
+            if (pageNumber > 0) {
+                document.getElementById('appCommentsBody').innerHTML += commentsView;
+            } else {
+                document.getElementById('appCommentsBody').innerHTML = commentsView;
+            }
+
+            document.getElementById('commentsModal').dataset.pageCount = pageNumber;
+            document.getElementById('commentsModal').dataset.allCommentsLoaded = comments.length < 20 ? true : false;
+            document.getElementById('commentsModal').dataset.canLoad = 'true';
+
+            if (firstOpen) {
+                document.getElementById('commentsModal').dataset.packageName = packageName;
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        ModalManager.showError('appCommentsBody', 'Unable to load comments', 'Please try again later');
+    }
+}
+
+document.getElementById('commentsModal').children[0].addEventListener("scroll", function() {
+    const pageNumber = +document.getElementById('commentsModal').dataset.pageCount;
+    const packageName = document.getElementById('commentsModal').dataset.packageName;
+    const needLoadComments = document.getElementById('commentsModal').dataset.allCommentsLoaded === 'false';
+    const canLoad = document.getElementById('commentsModal').dataset.canLoad === 'true';
+
+    if (this.scrollTop >= this.scrollHeight * .6 && packageName && needLoadComments && canLoad) {
+        document.getElementById('commentsModal').dataset.canLoad = 'false';
+        document.getElementById('commentsModal').dataset.pageCount = pageNumber + 1;
+        showComments(packageName, pageNumber + 1);
+    }
+})
+
+document.getElementById('commentsFilterOption').onchange = function() {
+    document.getElementById('commentsModal').dataset.pageCount = 0;
+
+    const packageName = document.getElementById('commentsModal').dataset.packageName;
+    showComments(packageName, 0);
 }
 
 // Image Preview functions
