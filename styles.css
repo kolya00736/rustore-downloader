@@ -30,18 +30,19 @@
     position: relative;
 }
 
+.modal-close, #commentsFilterOption {
+    cursor: pointer;
+    outline: none;
+}
+
 .modal-close {
     font-weight: bold;
     font-size: 28px;
     float: right;
-}
-
-.modal-close, #commentsFilterOption {
     color: #aaa;
-    cursor: pointer;
 }
 
-.modal-close:hover, #commentsFilterOption:hover {
+.modal-close:hover {
     color: black;
 }
 

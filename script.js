@@ -182,7 +182,7 @@ function createAppCard(appDetails, app) {
                         ${roundToDecimal(app.averageUserRating)}
                         <span class="text-sm text-gray-600">(${app.totalRatings.toLocaleString()})</span>
                     </div>
-                    <button class="comments-toggle" onclick="showComments('${appDetails.packageName}', 0, '${app.totalRatings}', true)">Show comments</button>
+                    <button class="comments-toggle" onclick="showComments('${appDetails.packageName}', 0, true)">Show comments</button>
                 </div>
             </div>
             
@@ -279,10 +279,10 @@ function showDescription(appName, description) {
     modal.classList.add('show');
 }
 
-async function showComments(packageName, pageNumber, votes, firstOpen) {
+async function showComments(packageName, pageNumber, firstOpen) {
     if (firstOpen) {
-        document.getElementById('appCommentsHeader').innerHTML = `App Comments (${votes.toLocaleString()})`;
-        document.getElementById('commentsFilterOption').innerHTML = '<option value="NEW_FIRST" selected>New first</option><option value="USEFUL_FIRST">Useful first</option>';
+        document.getElementById('appCommentsHeader').innerHTML = `App Comments`;
+        document.getElementById('commentsFilterOption').classList.add('hidden');
         ModalManager.show('commentsModal');
     }
 
@@ -330,6 +330,18 @@ async function showComments(packageName, pageNumber, votes, firstOpen) {
 
             if (firstOpen) {
                 document.getElementById('commentsModal').dataset.packageName = packageName;
+
+                if (comments.length > 0)
+                {
+                    const commOpts = document.getElementById('commentsFilterOption');
+                    commOpts.innerHTML = `
+                        <option value="NEW_FIRST" selected>New first</option>
+                        <option value="USEFUL_FIRST" selected>Useful first</option>
+                        <option value="POSITIVE_FIRST">Positive first</option>
+                        <option value="NEGATIVE_FIRST">Negative first</option>
+                    `;                
+                    commOpts.classList.remove('hidden');
+                }
             }
         }
     } catch (error) {
