@@ -209,7 +209,7 @@ function createAppCard(appDetails, app) {
             </div>
             
             <div class="mt-4 flex justify-between items-center">
-                <button class="download-btn" onclick="downloadApp(${appDetails.appId})">Download</button>
+                <button class="download-btn" onclick="downloadApp(${appDetails.appId}, ${appDetails.minSdkVersion})">Download</button>
                 <span class="version-history-btn" onclick="showVersionHistory(${appDetails.appId})">Version History</span>
             </div>
         `
@@ -241,23 +241,50 @@ async function showVersionHistory(appId) {
     }
 }
 
-async function downloadApp(appId) {
+async function downloadApp(appId, sdkVersion) {
     ModalManager.show('downloadModal', 'downloadResults', '<div class="text-center p-4"><p class="text-gray-600">Obtaining download link...</p></div>');
 
     try {
         const response = await fetch('https://backapi.rustore.ru/applicationData/v2/download-link', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ appId })
+            body: JSON.stringify({ 
+                "appId": appId,
+                "firstInstall": true,   // can be true or false (no difference)
+                "mobileServices": [],   // optional
+                "supportedAbis": [	    // optional
+                    "x86_64",
+                    "arm64-v8a",
+                    "x86",
+                    "armeabi-v7a",
+                    "armeabi"
+                ],
+                "screenDensity": 0,     // TODO: fix, currently set to 0
+                "supportedLocales": [   // optional
+                    "ru_RU"
+                ],
+                "sdkVersion": sdkVersion,
+                "withoutSplits": true,
+                "signatureFingerprint": null
+            })
         });
-        
-        const data = await response.json();
-        if (data.code === 'OK') {
-            document.getElementById('downloadResults').innerHTML = JSON.stringify(data, null, 4).replace(
-                /(https?:\/\/[^\s"]+)/g,
-                '<a href="$1" class="text-blue-500 hover:text-blue-700 underline" rel="noopener" download>$1</a>'
-            );
+
+        if (!response.ok) {
+            // Trying to parse the error body
+            const errBody = await response.json().catch(() => ({}));
+            throw new Error(`HTTP ${response.status}: ${errBody.message || 'Unknown error'}`);
         }
+
+        const data = await response.json();
+
+        if (data.code !== 'OK') {
+            throw new Error(data.message || 'Server returned error');
+        }
+
+        document.getElementById('downloadResults').innerHTML = JSON.stringify(data, null, 4).replace(
+            /(https?:\/\/[^\s"]+)/g,
+            '<a href="$1" class="text-blue-500 hover:text-blue-700 underline" rel="noopener" download>$1</a>'
+        );
     } catch (error) {
         console.error('Error downloading app:', error);
         ModalManager.showError('downloadResults', 'Unable to obtain download URLs', 'Please try again');
